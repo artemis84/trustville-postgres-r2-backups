@@ -4,18 +4,22 @@ import { createReadStream, unlink } from "fs";
 
 import { env } from "./env";
 
-const uploadToS3 = async ({ name, path }: {name: string, path: string}) => {
-  console.log("Uploading backup to S3...");
+const uploadToR2 = async ({ name, path }: { name: string; path: string }) => {
+  console.log("Uploading backup to R2...");
 
-  const bucket = env.AWS_S3_BUCKET;
+  const bucket = env.R2_BUCKET;
 
   const clientOptions: S3ClientConfig = {
-    region: env.AWS_S3_REGION,
-  }
+    region: env.R2_REGION,
+    credentials: {
+      accessKeyId: env.R2_ACCESS_KEY,
+      secretAccessKey: env.R2_SECRET_KEY,
+    },
+  };
 
-  if (env.AWS_S3_ENDPOINT) {
-    console.log(`Using custom endpoint: ${env.AWS_S3_ENDPOINT}`)
-    clientOptions['endpoint'] = env.AWS_S3_ENDPOINT;
+  if (env.R2_ENDPOINT) {
+    console.log(`Using custom endpoint: ${env.R2_ENDPOINT}`);
+    clientOptions["endpoint"] = env.R2_ENDPOINT;
   }
 
   const client = new S3Client(clientOptions);
@@ -26,17 +30,17 @@ const uploadToS3 = async ({ name, path }: {name: string, path: string}) => {
       Key: name,
       Body: createReadStream(path),
     })
-  )
+  );
 
-  console.log("Backup uploaded to S3...");
-}
+  console.log("Backup uploaded to R2...");
+};
 
 const dumpToFile = async (path: string) => {
   console.log("Dumping DB to file...");
 
   await new Promise((resolve, reject) => {
     exec(
-      `pg_dump ${env.BACKUP_DATABASE_URL} -F t | gzip > ${path}`,
+      `pg_dump ${env.DATABASE_DUMP_URL} -F t | gzip > ${path}`,
       (error, stdout, stderr) => {
         if (error) {
           reject({ error: JSON.stringify(error), stderr });
@@ -49,7 +53,7 @@ const dumpToFile = async (path: string) => {
   });
 
   console.log("DB dumped to file...");
-}
+};
 
 const deleteFile = async (path: string) => {
   console.log("Deleting file...");
@@ -59,20 +63,20 @@ const deleteFile = async (path: string) => {
       return;
     });
     resolve(undefined);
-  })
-}
+  });
+};
 
 export const backup = async () => {
-  console.log("Initiating DB backup...")
+  console.log("Initiating DB backup...");
 
-  let date = new Date().toISOString()
-  const timestamp = date.replace(/[:.]+/g, '-')
-  const filename = `backup-${timestamp}.tar.gz`
-  const filepath = `/tmp/${filename}`
+  let date = new Date().toISOString();
+  const timestamp = date.replace(/[:.]+/g, "-");
+  const filename = `backup-${timestamp}.tar.gz`;
+  const filepath = `/tmp/${filename}`;
 
-  await dumpToFile(filepath)
-  await uploadToS3({name: filename, path: filepath})
-  await deleteFile(filepath)
+  await dumpToFile(filepath);
+  await uploadToR2({ name: filename, path: filepath });
+  await deleteFile(filepath);
 
-  console.log("DB backup complete...")
-}
+  console.log("DB backup complete...");
+};
