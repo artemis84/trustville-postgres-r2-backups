@@ -1,4 +1,4 @@
-FROM alpine:3.14 AS build
+FROM node:18-alpine AS build
 
 WORKDIR /root
 
@@ -12,7 +12,7 @@ RUN npm install
 RUN npm run build
 RUN npm prune --production
 
-FROM alpine:3.14
+FROM node:18-alpine
 
 WORKDIR /root
 
