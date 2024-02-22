@@ -71,7 +71,7 @@ export const backup = async () => {
 
   let date = new Date().toISOString();
   const timestamp = date.replace(/[:.]+/g, "-");
-  const filename = `database-backup/sql-${timestamp}.tar.gz`;
+  const filename = `backup-sql-${timestamp}.tar.gz`;
   const filepath = `/tmp/${filename}`;
 
   await dumpToFile(filepath);
