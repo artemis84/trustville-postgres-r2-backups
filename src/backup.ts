@@ -27,7 +27,7 @@ const uploadToR2 = async ({ name, path }: { name: string; path: string }) => {
   await client.send(
     new PutObjectCommand({
       Bucket: bucket,
-      Key: name,
+      Key: `database-backup/${name}`,
       Body: createReadStream(path),
     })
   );
@@ -71,7 +71,7 @@ export const backup = async () => {
 
   let date = new Date().toISOString();
   const timestamp = date.replace(/[:.]+/g, "-");
-  const filename = `db_backup/sql-${timestamp}.tar.gz`;
+  const filename = `backup-${timestamp}.tar.gz`;
   const filepath = `/tmp/${filename}`;
 
   await dumpToFile(filepath);
